@@ -2,7 +2,7 @@ const util = require('util');
 const fs = require('fs');
 const path = require('path')
 
-const file = path.join(__dirname, 'input')
+const file = path.join(__dirname, '..', 'input')
 const readFile = util.promisify(fs.readFile);
 
 
