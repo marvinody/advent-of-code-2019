@@ -27,8 +27,26 @@ func driver(lines []string) {
 		insn, _ := strconv.Atoi(num)
 		insns = append(insns, insn)
 	}
+
+	wantedOutput := 19690720
+
+	for noun := 0; noun < len(insns); noun++ {
+		for verb := 0; verb < len(insns); verb++ {
+			newInsns := make([]int, len(insns))
+			copy(newInsns, insns)
+
+			newInsns[1] = noun
+			newInsns[2] = verb
+			output := emulator(newInsns)
+			if output[0] == wantedOutput {
+				fmt.Printf("p2: noun: %d, verb: %d\n", noun, verb)
+			}
+		}
+	}
+	fmt.Println("Finished iterating for amount of insns")
+
 	output := emulator(insns)
-	fmt.Println("output:", output)
+	fmt.Println("p1 output:", output[0])
 
 }
 
@@ -52,6 +70,10 @@ func emulator(insns []int) []int {
 		leftAddr := insns[PC+1]
 		rightAddr := insns[PC+2]
 		outAddress := insns[PC+3]
+
+		// if leftAddr > len(insns) || rightAddr > len(insns) || outAddress > len(insns) {
+		// 	return insns
+		// }
 		switch insn {
 		case ADD:
 			result := insns[leftAddr] + insns[rightAddr]
