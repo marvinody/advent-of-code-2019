@@ -45,7 +45,6 @@ func findNumbers(low, high int) []int {
 
 func checkNumber(n int) bool {
 	pairs := pair(numRange((numDigits(n))))
-	hasSeenDouble := false
 	getDigit := digitGetter(n)
 	for _, pair := range pairs {
 		// 0-idx is technically the ones digit, and it's on the right
@@ -54,12 +53,14 @@ func checkNumber(n int) bool {
 		if right < left {
 			return false
 		}
-		if right == left {
-			hasSeenDouble = true
+	}
+	digitFreq := freq(n)
+	for _, count := range digitFreq {
+		if count == 2 {
+			return true
 		}
 	}
-
-	return hasSeenDouble
+	return false
 }
 
 func digitGetter(n int) func(int) int {
@@ -71,6 +72,24 @@ func digitGetter(n int) func(int) int {
 
 func numDigits(n int) int {
 	return int(math.Floor(math.Log10(float64(n)) + 1))
+}
+
+func explode(n int) []int {
+	numDigits := numDigits(n)
+	digits := make([]int, numDigits)
+	getter := digitGetter(n)
+	for idx := range digits {
+		digits[numDigits-idx-1] = getter(idx)
+	}
+	return digits
+}
+
+func freq(n int) map[int]int {
+	freqs := make(map[int]int)
+	for _, digit := range explode(n) {
+		freqs[digit]++
+	}
+	return freqs
 }
 
 func numRange(n int) []int {
