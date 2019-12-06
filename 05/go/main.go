@@ -29,7 +29,7 @@ func driver(lines []string) {
 		insns = append(insns, insn)
 	}
 
-	input := 1
+	input := 5
 	_, output := emulator(insns, input)
 	fmt.Println("p1 output:", output)
 
@@ -37,11 +37,15 @@ func driver(lines []string) {
 
 // op codes
 const (
-	ADD      int = 1
-	MULTIPLY     = 2
-	WRITE        = 3 // writes input into int array
-	READ         = 4 // reads some int and will output it
-	HALT         = 99
+	ADD           int = 1
+	MULTIPLY          = 2
+	WRITE             = 3 // writes input into int array
+	READ              = 4 // reads some int and will output it
+	JUMP_IF_TRUE      = 5
+	JUMP_IF_FALSE     = 6
+	LESS_THAN         = 7
+	EQUAL_TO          = 8
+	HALT              = 99
 )
 
 // addressing modes
@@ -51,11 +55,15 @@ const (
 )
 
 var opLength = map[int]int{
-	ADD:      4,
-	MULTIPLY: 4,
-	READ:     2,
-	WRITE:    2,
-	HALT:     1,
+	ADD:           4,
+	MULTIPLY:      4,
+	READ:          2,
+	WRITE:         2,
+	HALT:          1,
+	JUMP_IF_TRUE:  3,
+	JUMP_IF_FALSE: 3,
+	LESS_THAN:     4,
+	EQUAL_TO:      4,
 }
 
 func emulator(insns []int, input int) ([]int, int) {
@@ -72,8 +80,14 @@ func emulator(insns []int, input int) ([]int, int) {
 
 		// the next few 'bytes' are our addresses/immediates
 		leftVal, rightVal, outAddress := 0, 0, 0
-		if op == ADD || op == MULTIPLY {
-			leftVal = insns[PC+1]
+		leftVal = insns[PC+1]
+		if false ||
+			op == ADD ||
+			op == MULTIPLY ||
+			op == JUMP_IF_TRUE ||
+			op == JUMP_IF_FALSE ||
+			op == LESS_THAN ||
+			op == EQUAL_TO {
 			rightVal = insns[PC+2]
 			outAddress = insns[PC+3]    // this will probably always be position
 			if getMode(2) == POSITION { // for digit in the hundreds (10 ^ 2)
@@ -84,8 +98,10 @@ func emulator(insns []int, input int) ([]int, int) {
 			}
 		}
 
-		if op == WRITE || op == READ {
-			leftVal = insns[PC+1]
+		if op == READ {
+			if getMode(2) == POSITION { // for digit in the hundreds (10 ^ 2)
+				leftVal = insns[leftVal] // access the value stored at that address
+			}
 		}
 
 		switch op {
@@ -98,12 +114,25 @@ func emulator(insns []int, input int) ([]int, int) {
 		case WRITE:
 			insns[leftVal] = input
 		case READ:
-			output = insns[leftVal]
+			output = leftVal
+		case JUMP_IF_TRUE:
+			if leftVal != 0 {
+				PC = rightVal
+				continue
+			}
+		case JUMP_IF_FALSE:
+			if leftVal == 0 {
+				PC = rightVal
+				continue
+			}
+		case LESS_THAN:
+			insns[outAddress] = b2i(leftVal < rightVal)
+		case EQUAL_TO:
+			insns[outAddress] = b2i(leftVal == rightVal)
 		}
 
 		// each op is 4 'bytes' long so we skip the section each loop
 		PC += opLength[op]
-
 	}
 }
 
@@ -113,4 +142,11 @@ func digitGetter(n int) func(int) int {
 		base := int(math.Pow10(idx))
 		return (n / base) % 10
 	}
+}
+
+func b2i(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }
