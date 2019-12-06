@@ -29,7 +29,8 @@ func driver(lines []string) {
 		insns = append(insns, insn)
 	}
 
-	_, output := emulator(insns)
+	input := 1
+	_, output := emulator(insns, input)
 	fmt.Println("p1 output:", output)
 
 }
@@ -38,8 +39,8 @@ func driver(lines []string) {
 const (
 	ADD      int = 1
 	MULTIPLY     = 2
-	READ         = 3
-	WRITE        = 4
+	WRITE        = 3 // writes input into int array
+	READ         = 4 // reads some int and will output it
 	HALT         = 99
 )
 
@@ -57,7 +58,7 @@ var opLength = map[int]int{
 	HALT:     1,
 }
 
-func emulator(insns []int) ([]int, int) {
+func emulator(insns []int, input int) ([]int, int) {
 	PC := 0 // where we at in the program
 	output := 0
 	for {
@@ -65,21 +66,27 @@ func emulator(insns []int) ([]int, int) {
 		op := insn % 100
 		getMode := digitGetter(insn)
 		// exit quickly to prevent out of bounds from next statements
-		if op == HALT {
+		if insn == HALT {
 			return insns, output
 		}
 
 		// the next few 'bytes' are our addresses/immediates
-		leftVal := insns[PC+1]
-		rightVal := insns[PC+2]
-		if getMode(2) == POSITION { // for digit in the hundreds (10 ^ 2)
-			leftVal = insns[leftVal] // access the value stored at that address
-		}
-		if getMode(3) == POSITION { // for digit in the thousands (10 ^ 3)
-			rightVal = insns[rightVal]
+		leftVal, rightVal, outAddress := 0, 0, 0
+		if op == ADD || op == MULTIPLY {
+			leftVal = insns[PC+1]
+			rightVal = insns[PC+2]
+			outAddress = insns[PC+3]    // this will probably always be position
+			if getMode(2) == POSITION { // for digit in the hundreds (10 ^ 2)
+				leftVal = insns[leftVal] // access the value stored at that address
+			}
+			if getMode(3) == POSITION { // for digit in the thousands (10 ^ 3)
+				rightVal = insns[rightVal]
+			}
 		}
 
-		outAddress := insns[PC+3] // this will probably always be position
+		if op == WRITE || op == READ {
+			leftVal = insns[PC+1]
+		}
 
 		switch op {
 		case ADD:
@@ -88,6 +95,10 @@ func emulator(insns []int) ([]int, int) {
 		case MULTIPLY:
 			result := leftVal * rightVal
 			insns[outAddress] = result
+		case WRITE:
+			insns[leftVal] = input
+		case READ:
+			output = insns[leftVal]
 		}
 
 		// each op is 4 'bytes' long so we skip the section each loop
